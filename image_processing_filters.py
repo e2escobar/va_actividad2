@@ -74,7 +74,7 @@ def show_images(image_name, original, spatial_results, morph_results, titles):
     cols = 4
     rows = (num_images + cols - 1) // cols
 
-    plt.figure(figsize=(12, 10))
+    plt.figure(figsize=(10, 10))
     for i, (img, title) in enumerate(zip(images_to_show, titles)):
         plt.subplot(rows, cols, i + 1)
         plt.imshow(img, cmap='gray')
