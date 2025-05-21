@@ -3,12 +3,13 @@ import glob
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
 
 IMAGE_DIR = "./images"
 IMAGE_EXTENSIONS = ['*.jpg', '*.jpeg', '*.png', '*.tif', '*.tiff']
 
 TITLES = [
-    "Original", "Filtro de Media", "Filtro Gaussiano", "Filtro de Mediana",
+    "Filtro de Media", "Filtro Gaussiano", "Filtro de Mediana",
     "Laplaciano", "Sobel X", "Sobel Y", "Sobel Magnitud",
     "Erosión", "Dilatación", "Apertura", "Clausura", "Canny"
 ]
@@ -53,9 +54,8 @@ def apply_morphological_filters(images: dict) -> dict:
         morph_results[name] = results.copy()
     return morph_results
 
-def show_images(image_name, original, spatial_results, morph_results, titles):
+def show_images(image_name, original, spatial_results, morph_results, titles, save_path=None):
     images_to_show = [
-        original,
         spatial_results['blur'],
         spatial_results['gaussian'],
         spatial_results['median'],
@@ -74,31 +74,63 @@ def show_images(image_name, original, spatial_results, morph_results, titles):
     cols = 4
     rows = (num_images + cols - 1) // cols
 
-    plt.figure(figsize=(10, 10))
+    fig = plt.figure(figsize=(12, 10), dpi=100) # Assign to fig
     for i, (img, title) in enumerate(zip(images_to_show, titles)):
         plt.subplot(rows, cols, i + 1)
-        plt.imshow(img, cmap='gray')
+        plt.imshow(img, cmap='gray_r')
         plt.title(title, fontsize=10)
         plt.axis('off')
 
     plt.suptitle(f"Resultados para: {image_name}", fontsize=14)
-    plt.tight_layout()
-    plt.show()
-    plt.close() 
+    plt.tight_layout(rect=[0, 0, 1, 0.96]) # Adjust layout for suptitle
+    
+    if save_path:
+        # save_path is just the filename, it will be saved in the current working directory.
+        full_save_path = os.path.join(os.getcwd(), save_path)
+        fig.savefig(full_save_path)
+        print(f"Saved results for {image_name} to {full_save_path}")
+    else:
+        plt.show()
+    plt.close(fig) # Close the figure explicitly
 
 def main():
-    images = load_images(IMAGE_DIR, IMAGE_EXTENSIONS)
+    parser = argparse.ArgumentParser(description="Process images with various filters and optionally save the results.")
+    parser.add_argument(
+        "--save", 
+        action="store_true", 
+        help="Save the processed image collages to the current working directory."
+    )
+    parser.add_argument(
+        "--image_dir",
+        type=str,
+        default=IMAGE_DIR,
+        help=f"Directory to load images from. Default: {IMAGE_DIR}"
+    )
+    args = parser.parse_args()
+
+    images = load_images(args.image_dir, IMAGE_EXTENSIONS) 
+    if not images:
+        print(f"No images found in '{args.image_dir}'. Exiting.")
+        return
+
     spatial_filtered = apply_spatial_filters(images)
     morphological_filtered = apply_morphological_filters(images)
 
     for name in images:
+        save_filename = None
+        if args.save:
+            base, _ = os.path.splitext(name)
+            safe_base = base.replace(" ", "_") # Sanitize filename
+            save_filename = f"filtered_results_{safe_base}.png"
+            
         show_images(
             image_name=name,
             original=images[name],
             spatial_results=spatial_filtered[name],
             morph_results=morphological_filtered[name],
-            titles=TITLES
-        ) 
+            titles=TITLES,
+            save_path=save_filename # Pass the save_filename (which might be None)
+        )
 
 if __name__ == "__main__":
     main()
